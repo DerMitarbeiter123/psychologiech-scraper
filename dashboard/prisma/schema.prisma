@@ -1,0 +1,335 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model DataMerge {
+  id                 String    @id
+  therapistId        String
+  sourceData         Json
+  mergedData         Json
+  conflicts          Json?
+  mergeStrategy      String
+  qualityImprovement Float
+  createdAt          DateTime  @default(now())
+  createdBy          String    @default("auto-merge")
+  Therapist          Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([therapistId])
+}
+
+model DuplicateCandidate {
+  id              String    @id
+  therapist1Id    String
+  therapist2Id    String
+  similarityScore Float
+  matchReasons    String[]
+  status          String    @default("pending")
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  createdAt       DateTime  @default(now())
+
+  @@index([similarityScore])
+  @@index([status])
+  @@index([therapist1Id])
+  @@index([therapist2Id])
+}
+
+model EmergencyClinic {
+  id                    String   @id
+  url                   String   @unique
+  name                  String
+  type                  String   @default("hospital")
+  description           String?
+  city                  String
+  citySearchValue       String?
+  canton                String
+  street                String?
+  zip                   String?
+  lat                   Float?
+  lng                   Float?
+  phone                 String?
+  phoneEmergency        String?
+  email                 String?
+  website               String?
+  openingHours          Json?
+  emergencyHours        String?
+  services              String[] @default([])
+  specialties           String[] @default([])
+  acceptsBasicInsurance Boolean  @default(true)
+  acceptsSupplementary  Boolean  @default(false)
+  availabilityStatus    Int      @default(1)
+  availabilityText      String?
+  languages             String[] @default([])
+  parking               Boolean  @default(false)
+  publicTransport       Boolean  @default(false)
+  wheelchairAccessible  Boolean  @default(false)
+  isVerified            Boolean  @default(false)
+  dataSource            String?  @default("manual")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime
+
+  @@index([availabilityStatus])
+  @@index([canton])
+  @@index([citySearchValue])
+  @@index([type])
+}
+
+model SpitalInfo {
+  id                 String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  externalId         String?   @unique
+  title              String?
+  konzernname        String?
+  address            String?
+  kanton             String?
+  pfad               String?
+  isAkut             Boolean?  @default(false)
+  isPsyc             Boolean?  @default(false)
+  isReha             Boolean?  @default(false)
+  lat                Float?
+  lng                Float?
+  akutsG             Json?
+  akutsB             Json?
+  notfalls           Int[]
+  psycs              Int[]
+  rehas              Int[]
+  qvms               Json?
+  contactPhone       String?
+  contactFax         String?
+  contactEmail       String?
+  contactWebsite     String?
+  emergencyStations  Json?
+  visitingHours      String?
+  visitingHoursNotes String?
+  description        String?
+  qualityReport      String?
+  qualityRating      Float?
+  qualityDevelopment String?
+  groupHospitals     String[]
+  groupLocations     String[]
+  groupLocationsUid  String[]
+  dataSource         String?   @default("spitalinfo.ch")
+  lastScrapedAt      DateTime? @db.Timestamptz(6)
+  scrapeStatus       String?
+  scrapeError        String?
+  createdAt          DateTime? @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model SyncLog {
+  id           String     @id
+  source       DataSource @default(doc24)
+  canton       String?
+  totalFetched Int
+  totalSaved   Int
+  totalMerged  Int        @default(0)
+  totalSkipped Int        @default(0)
+  status       String
+  errorMessage String?
+  startedAt    DateTime
+  completedAt  DateTime   @default(now())
+
+  @@index([completedAt])
+  @@index([source])
+}
+
+model Therapist {
+  id                        String                 @id
+  url                       String                 @unique
+  externalId                String?
+  dataSource                DataSource             @default(doc24)
+  dataQualityScore          Int                    @default(0)
+  firstName                 String
+  lastName                  String
+  title                     String?
+  gender                    String
+  picture                   String?
+  pictureUrl                String?
+  hasPicture                Boolean                @default(false)
+  professionalTitle1        String?
+  professionalTitle2        String?
+  practiceName              String?
+  therapeutischArea         String?
+  therapeutischOffer        String?
+  therapeutischOfferExcerpt String?
+  additionalInfo            String?
+  experienceYears           Float?
+  city                      String
+  citySearchValue           String
+  canton                    String
+  street                    String?
+  zip                       String?
+  lat                       Float?
+  lng                       Float?
+  phone                     String?
+  mobile                    String?
+  fax                       String?
+  email                     String?
+  website                   String?
+  showPhone                 Boolean                @default(false)
+  showMobile                Boolean                @default(false)
+  showFax                   Boolean                @default(false)
+  offersPhoneCall           Boolean                @default(false)
+  offersVideoCall           Boolean                @default(false)
+  offersOnlineTherapy       Boolean                @default(false)
+  insuranceBasic            Boolean                @default(false)
+  insuranceSupplementary    Boolean                @default(false)
+  insuranceSelf             Boolean                @default(false)
+  trafficLight              Int                    @default(2)
+  availabilityText          String?
+  onlineBookingConsultation Boolean                @default(false)
+  onlineBookingUrl          String?
+  specialization            String
+  role                      String?
+  employmentType            String?
+  employmentDescription     String?
+  product                   String?
+  sourceCreatedAt           DateTime?
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime
+  lastSyncedAt              DateTime?
+  backupData                Json?
+  backupDate                DateTime?
+  backupSource              String?
+  contactDataQuality        ContactDataQuality     @default(unverified)
+  contactVerified           Boolean                @default(false)
+  dataCompleteness          Float                  @default(0.0)
+  lastMergeAt               DateTime?
+  mergeConflicts            Json?
+  mergedFrom                String[]
+  profileCompleteness       Int                    @default(0)
+  psychologie_ch_id         String?                @db.VarChar(50)
+  psychologie_ch_user_id    String?                @db.VarChar(50)
+  scraped_at                DateTime?              @db.Timestamp(6)
+  services_offered          String?
+  target_groups_json        String?
+  billing_options           String?
+  qualifications            String?
+  specializations           String?
+  languages_spoken          String?
+  online_availability       String?                @db.VarChar(50)
+  practice_name             String?
+  raw_data                  String?
+  about_me                  String?
+  DataMerge                 DataMerge[]
+  TherapistAddress          TherapistAddress[]
+  TherapistAssociation      TherapistAssociation[]
+  TherapistLanguage         TherapistLanguage[]
+  TherapistPrice            TherapistPrice[]
+  TherapistReason           TherapistReason[]
+
+  @@index([canton])
+  @@index([citySearchValue])
+  @@index([contactDataQuality])
+  @@index([contactVerified])
+  @@index([dataSource])
+  @@index([experienceYears])
+  @@index([specialization])
+  @@index([trafficLight])
+}
+
+model TherapistAddress {
+  id          String    @id
+  therapistId String
+  name        String?
+  street      String?
+  zip         String?
+  city        String
+  canton      String?
+  lat         Float?
+  lng         Float?
+  description String?
+  isPrimary   Boolean   @default(false)
+  Therapist   Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@index([therapistId])
+}
+
+model TherapistAssociation {
+  id                String    @id
+  therapistId       String
+  searchValue       String
+  abbreviation      String
+  displayValueDe    String
+  logo              String?
+  isLogoAssociation Boolean   @default(false)
+  Therapist         Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@unique([therapistId, searchValue])
+  @@index([searchValue])
+}
+
+model TherapistLanguage {
+  id           String    @id
+  therapistId  String
+  language     String
+  displayValue String
+  knowledge    String?
+  Therapist    Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@unique([therapistId, language])
+}
+
+model TherapistPrice {
+  id          String    @id
+  therapistId String
+  therapyType String
+  duration    Int
+  price       Float
+  description String?
+  currency    String    @default("CHF")
+  Therapist   Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@index([therapistId])
+}
+
+model TherapistReason {
+  id            String    @id
+  therapistId   String
+  searchValue   String
+  displayValue  String
+  category      String?
+  isHeavy       Boolean   @default(false)
+  showEmergency Boolean?
+  Therapist     Therapist @relation(fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@unique([therapistId, searchValue])
+  @@index([category])
+  @@index([searchValue])
+}
+
+model datacleanuplog {
+  id                 Int       @id @default(autoincrement())
+  original_id        String?   @db.VarChar(255)
+  proposed_changes   Json?
+  reasoning          String?
+  source_url         String?
+  status             String?   @db.VarChar(50)
+  validation_details Json?
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+}
+
+enum ContactDataQuality {
+  verified_personal
+  verified_generic
+  unverified
+  not_found
+}
+
+enum DataSource {
+  doc24
+  wepractice
+  manual
+  chatgpt_research
+}
+
+enum MergeConflictResolution {
+  keep_existing
+  use_newer
+  manual_review
+}
